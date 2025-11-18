@@ -17,7 +17,7 @@ export default function SignupForm({ setUser }) {
 
     try {
       const res = await fetch(
-        `${process.env.REACT_APP_API_BASE}/api/users/signup`,
+        `${process.env.REACT_APP_API_BASE}/api/signup`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
