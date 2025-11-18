@@ -1,93 +1,68 @@
+// src/components/LoginForm.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export default function LoginForm({ setUser }) {
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+const API = process.env.REACT_APP_API_BASE || 'https://coffeenivincent.onrender.com';
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+export default function LoginForm({ setUser }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
+    setError('');
 
     try {
-      const res = await fetch(
-        `${process.env.REACT_APP_API_BASE}/api/login`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        }
-      );
+      const res = await fetch(`${API}/api/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      if (!res.ok) {
+        setError(data.error || 'Login failed');
+        return;
+      }
 
-      setUser(data.user); // Save logged-in user in state
-      navigate('/'); // Redirect to homepage
+      // Store user in state or localStorage
+      setUser(data.user);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      navigate('/'); // redirect to homepage
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      console.error(err);
+      setError('Network error');
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded-lg p-8 w-full max-w-md"
-      >
-        <h2 className="text-2xl font-bold text-emerald-600 mb-6 text-center">
-          Login
-        </h2>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-
-        <label className="block mb-2 text-gray-700">Email</label>
+    <div className="max-w-md mx-auto mt-10 p-6 border rounded shadow">
+      <h2 className="text-2xl font-bold mb-4">Login</h2>
+      {error && <p className="text-red-600 mb-2">{error}</p>}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           type="email"
-          name="email"
-          placeholder="Enter your email"
-          value={form.email}
-          onChange={handleChange}
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="border px-3 py-2 rounded"
           required
-          className="w-full mb-4 p-2 border border-gray-300 rounded focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
         />
-
-        <label className="block mb-2 text-gray-700">Password</label>
         <input
           type="password"
-          name="password"
-          placeholder="Enter your password"
-          value={form.password}
-          onChange={handleChange}
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          className="border px-3 py-2 rounded"
           required
-          className="w-full mb-6 p-2 border border-gray-300 rounded focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
         />
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-emerald-600 text-white py-2 rounded hover:bg-emerald-700 transition"
-        >
-          {loading ? 'Logging in...' : 'Login'}
+        <button type="submit" className="bg-emerald-600 text-white py-2 rounded hover:bg-emerald-700">
+          Login
         </button>
-
-        <p className="text-gray-600 text-sm mt-4 text-center">
-          Don't have an account?{' '}
-          <span
-            onClick={() => navigate('/signup')}
-            className="text-emerald-600 cursor-pointer hover:underline"
-          >
-            Sign up
-          </span>
-        </p>
       </form>
     </div>
   );

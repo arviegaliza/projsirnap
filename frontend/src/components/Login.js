@@ -1,89 +1,72 @@
-// src/components/Login.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+
+const API = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
 
 export default function Login({ setUser }) {
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [err, setErr] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  function onChange(e) {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  }
-
-  async function onSubmit(e) {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setErr(null);
-
-    if (!form.email || !form.password) {
-      setErr('Email and password are required');
-      return;
-    }
+    if (!email || !password) return alert('Email and password are required');
 
     setLoading(true);
-
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/users/login`, {
+      const res = await fetch(`${API}/api/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ email, password }),
       });
-
       const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || 'Login failed');
-
-      setUser(data.user); // Save logged-in user
-      navigate('/'); // Redirect to home
-    } catch (error) {
-      setErr(error.message);
+      if (res.ok || data.user) {
+        setUser(data.user);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        navigate('/');
+      } else {
+        alert(data.error || 'Login failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error logging in');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-12">
-      <h2 className="text-3xl font-bold text-emerald-600 mb-6 text-center">Login</h2>
-      <form onSubmit={onSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-md">
-        {err && <div className="text-red-600 text-center">{err}</div>}
-
+    <div className="max-w-md mx-auto mt-16 p-6 border rounded shadow-md">
+      <h2 className="text-xl font-bold mb-4">Login</h2>
+      <form onSubmit={handleLogin} className="flex flex-col gap-3">
         <input
-          name="email"
           type="email"
-          value={form.email}
-          onChange={onChange}
           placeholder="Email"
-          className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="border px-3 py-2 rounded focus:border-emerald-500 focus:ring focus:ring-emerald-200"
         />
         <input
-          name="password"
           type="password"
-          value={form.password}
-          onChange={onChange}
           placeholder="Password"
-          className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="border px-3 py-2 rounded focus:border-emerald-500 focus:ring focus:ring-emerald-200"
         />
-
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-emerald-600 text-white py-2 rounded hover:bg-emerald-700 transition"
+          className="bg-emerald-600 text-white px-3 py-2 rounded hover:bg-emerald-700 transition"
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
-
-        <p className="text-gray-600 text-sm text-center mt-2">
-          Don't have an account?{' '}
-          <span
-            onClick={() => navigate('/signup')}
-            className="text-emerald-600 cursor-pointer hover:underline"
-          >
-            Sign up
-          </span>
-        </p>
       </form>
+      <p className="mt-3 text-sm text-gray-600">
+        Don't have an account? <Link to="/signup" className="text-emerald-600 hover:underline">Sign Up</Link>
+      </p>
     </div>
   );
 }
