@@ -1,25 +1,44 @@
+// routes/bookings.js
 const express = require('express');
-const router = express.Router();
-const pool = require('../db');
 
-// Create a new booking
-router.post('/', async (req, res) => {
-  const { restaurant_id, name, time, tables } = req.body;
+module.exports = (io) => {
+  const router = express.Router();
+  const pool = require('../db');
 
-  try {
-    const result = await pool.query(
-      'INSERT INTO bookings (restaurant_id, name, time, tables) VALUES ($1, $2, $3, $4) RETURNING *',
-      [restaurant_id, name, time, tables]
-    );
+  // Create a booking
+  router.post('/', async (req, res) => {
+    const { customer_name, phone, email, date, time, guests, restaurant_id } = req.body;
+    try {
+      // Insert booking
+      const result = await pool.query(
+        `INSERT INTO bookings (customer_name, phone, email, date, time, guests, restaurant_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+        [customer_name, phone, email, date, time, guests, restaurant_id]
+      );
 
-    // Emit socket event for real-time updates
-    req.io.emit('bookingUpdated', { restaurant_id });
+      // Update available tables
+      const restaurant = await pool.query(
+        'SELECT tables_available FROM restaurants WHERE id = $1',
+        [restaurant_id]
+      );
 
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to create booking' });
-  }
-});
+      let tables_available = restaurant.rows[0].tables_available - guests;
+      if (tables_available < 0) tables_available = 0;
 
-module.exports = router;
+      await pool.query(
+        'UPDATE restaurants SET tables_available = $1 WHERE id = $2',
+        [tables_available, restaurant_id]
+      );
+
+      // Emit real-time update
+      io.emit('bookingUpdated', { restaurantId: restaurant_id, tables_available });
+
+      res.json({ message: 'Booking created', booking: result.rows[0] });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
+  return router;
+};

@@ -9,6 +9,7 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 import RestaurantList from './components/RestaurantList';
 import RestaurantPage from './components/RestaurantPage';
+import 'leaflet/dist/leaflet.css';
 
 export default function App() {
   const [user, setUser] = useState(null);
