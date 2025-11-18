@@ -1,30 +1,39 @@
+// server.js
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
-const pool = require('./db'); // PostgreSQL connection
+const pool = require('./db');
+
+const usersRouter = require('./routes/users');
+const restaurantsRouter = require('./routes/restaurants');
+const bookingsRouter = require('./routes/bookings');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// HTTP + Socket.IO
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET','POST'] },
-});
-
-io.on('connection', (socket) => {
-  console.log('Socket connected');
-  socket.on('disconnect', () => console.log('Socket disconnected'));
-});
-
-app.use(cors());
+// Middleware
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*', // e.g., 'https://coffeenivincent.onrender.com'
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+}));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use('/api/users', require('./routes/users'));
-app.use('/api/restaurants', require('./routes/restaurants'));
-app.use('/api/bookings', require('./routes/bookings')(io)); // pass io for real-time updates
+// API routes
+app.use('/api/users', usersRouter);
+app.use('/api/restaurants', restaurantsRouter);
+app.use('/api/bookings', bookingsRouter);
 
-// Start server
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Test DB
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) console.error('DB Connection Error:', err);
+  else console.log('Connected to DB at', res.rows[0].now);
+});
+
+// Root
+app.get('/', (req, res) => res.send('API running'));
+
+// Start server (without Socket.IO if not needed)
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
