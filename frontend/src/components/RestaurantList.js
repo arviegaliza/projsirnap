@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { io } from 'socket.io-client';
-import socket from '../socket'; // import the shared socket
+
 const API = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
 const socket = io(API);
 
