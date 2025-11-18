@@ -1,6 +1,6 @@
 // frontend/src/App.js
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
+import { Routes, Route, useParams } from 'react-router-dom';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -16,7 +16,7 @@ function Home() {
         <h1 className="text-3xl font-bold text-emerald-700">No lines. Just book.</h1>
         <p className="mt-2 text-gray-600">Discover local restaurants and reserve your table instantly.</p>
         <div className="mt-6 flex gap-3">
-          <a href="/restaurants" className="px-5 py-2 bg-emerald-600 text-white rounded">
+          <a href="/restaurants" className="px-5 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition">
             Find a table
           </a>
         </div>
@@ -55,12 +55,12 @@ function RestaurantList() {
         value={q}
         onChange={e => setQ(e.target.value)}
         placeholder="Search restaurants or cuisine"
-        className="w-full border px-3 py-2 rounded"
+        className="w-full border px-3 py-2 rounded focus:border-emerald-500 focus:ring focus:ring-emerald-200"
       />
       <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.length
           ? filtered.map(r => (
-              <div key={r.id} className="border rounded p-4 flex flex-col justify-between">
+              <div key={r.id} className="border rounded p-4 flex flex-col justify-between hover:shadow-md transition">
                 <div>
                   <h3 className="text-lg font-semibold">{r.name}</h3>
                   <p className="text-sm text-gray-500">{r.cuisine} • {r.city}</p>
@@ -74,7 +74,7 @@ function RestaurantList() {
                   <div className="text-sm text-gray-600">
                     {r.rating ?? '–'} ★ • {r.price_range ?? '–'}
                   </div>
-                  <a href={`/restaurant/${r.id}`} className="text-sm bg-emerald-600 text-white px-3 py-1 rounded">
+                  <a href={`/restaurant/${r.id}`} className="text-sm bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition">
                     View
                   </a>
                 </div>
@@ -107,14 +107,14 @@ function RestaurantPage() {
   if (!restaurant) return <div className="max-w-5xl mx-auto px-4 py-8">Loading...</div>;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 flex gap-8">
+    <div className="max-w-5xl mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
       <div className="flex-1">
         <h2 className="text-2xl font-bold">{restaurant.name}</h2>
         <p className="text-sm text-gray-600">{restaurant.address} • {restaurant.city}</p>
         <p className="mt-2 text-sm">{restaurant.cuisine} • {restaurant.price_range} • {restaurant.rating}★</p>
       </div>
-      <div className="w-96 border rounded p-4 bg-white shadow-sm">
-        <div className="text-sm text-gray-600">Available tables: <strong>{restaurant.tables_available ?? '-'}</strong></div>
+      <div className="w-full lg:w-96 border rounded p-4 bg-white shadow-sm">
+        <div className="text-sm text-gray-600 mb-2">Available tables: <strong>{restaurant.tables_available ?? '-'}</strong></div>
         <BookingForm restaurant={restaurant} />
       </div>
     </div>
@@ -126,7 +126,7 @@ export default function App() {
   const [user, setUser] = useState(null);
 
   return (
-    <Router>
+    <>
       <Header user={user} setUser={setUser} />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -134,6 +134,6 @@ export default function App() {
         <Route path="/restaurant/:id" element={<RestaurantPage />} />
       </Routes>
       <Footer />
-    </Router>
+    </>
   );
 }

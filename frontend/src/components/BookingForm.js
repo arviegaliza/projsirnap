@@ -1,105 +1,94 @@
+// frontend/src/components/BookingForm.js
 import React, { useState } from 'react';
 
-export default function BookingForm({ restaurantId, onBookingSuccess }) {
-  const [form, setForm] = useState({
-    customer_name: '',
-    phone: '',
-    date: '',
-    time: '',
-    guests: 1,
-  });
+const API = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
 
+export default function BookingForm({ restaurant, socket }) {
+  const [name, setName] = useState('');
+  const [tables, setTables] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [availableTables, setAvailableTables] = useState(restaurant.tables_available ?? 0);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  // Listen for real-time updates from server
+  React.useEffect(() => {
+    if (!socket) return;
 
-  const handleSubmit = async (e) => {
+    const handleBookingUpdated = (update) => {
+      if (update.restaurantId === restaurant.id) {
+        setAvailableTables(prev => prev - update.tablesBooked);
+      }
+    };
+
+    socket.on('bookingUpdated', handleBookingUpdated);
+
+    return () => {
+      socket.off('bookingUpdated', handleBookingUpdated);
+    };
+  }, [socket, restaurant.id]);
+
+  const handleBooking = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
+    if (tables > availableTables) {
+      alert(`Only ${availableTables} tables available`);
+      return;
+    }
 
+    setLoading(true);
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/bookings`, {
+      await fetch(`${API}/api/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, restaurant_id: restaurantId }),
+        body: JSON.stringify({ restaurantId: restaurant.id, name, tables }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Booking failed');
+      // Reset form
+      setName('');
+      setTables(1);
 
-      onBookingSuccess && onBookingSuccess(data.booking);
+      // Emit real-time event to server
+      if (socket) {
+        socket.emit('bookingUpdated', { restaurantId: restaurant.id, tablesBooked: tables });
+      }
+
       alert('Booking successful!');
-      setForm({ customer_name: '', phone: '', date: '', time: '', guests: 1 });
-    } catch (err) {
-      setError(err.message);
+    } catch (e) {
+      console.error(e);
+      alert('Booking failed!');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto bg-white p-6 rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Reserve a Table</h2>
-
-      {error && <p className="text-red-500 mb-2">{error}</p>}
-
+    <form onSubmit={handleBooking} className="flex flex-col gap-3">
       <input
         type="text"
-        name="customer_name"
-        placeholder="Your Name"
-        value={form.customer_name}
-        onChange={handleChange}
-        className="w-full mb-2 p-2 border rounded"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Your name"
         required
+        className="border px-3 py-2 rounded focus:border-emerald-500 focus:ring focus:ring-emerald-200"
       />
-
-      <input
-        type="text"
-        name="phone"
-        placeholder="Phone"
-        value={form.phone}
-        onChange={handleChange}
-        className="w-full mb-2 p-2 border rounded"
-      />
-
-      <input
-        type="date"
-        name="date"
-        value={form.date}
-        onChange={handleChange}
-        className="w-full mb-2 p-2 border rounded"
-        required
-      />
-
-      <input
-        type="time"
-        name="time"
-        value={form.time}
-        onChange={handleChange}
-        className="w-full mb-2 p-2 border rounded"
-        required
-      />
-
       <input
         type="number"
-        name="guests"
         min="1"
-        value={form.guests}
-        onChange={handleChange}
-        className="w-full mb-4 p-2 border rounded"
+        max={availableTables}
+        value={tables}
+        onChange={(e) => setTables(Number(e.target.value))}
         required
+        className="border px-3 py-2 rounded focus:border-emerald-500 focus:ring focus:ring-emerald-200"
       />
-
+      <div className="text-sm text-gray-600">
+        Available tables: <strong>{availableTables}</strong>
+      </div>
       <button
         type="submit"
-        disabled={loading}
-        className="w-full bg-emerald-600 text-white py-2 rounded hover:bg-emerald-700 transition"
+        disabled={loading || availableTables === 0}
+        className={`px-4 py-2 rounded text-white transition ${
+          availableTables === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'
+        }`}
       >
-        {loading ? 'Booking...' : 'Book Table'}
+        {loading ? 'Booking...' : 'Book'}
       </button>
     </form>
   );
