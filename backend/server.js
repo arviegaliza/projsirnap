@@ -45,7 +45,7 @@ pool.query('SELECT NOW()', (err, res) => {
 // ------------------------
 // Signup route (plain text for now)
 // ------------------------
-app.post('/api/signup', async (req, res) => {
+app.post('/api/users/signup', async (req, res) => { ... });
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
