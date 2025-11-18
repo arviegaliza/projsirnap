@@ -1,3 +1,4 @@
+// src/components/Signup.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -8,31 +9,52 @@ export default function Signup({ setUser }) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    if (!email || !password) return alert('Email and password are required');
-    if (password !== confirm) return alert('Passwords do not match');
+    setError('');
+
+    if (!email || !password) {
+      setError('Email and password are required');
+      return;
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match');
+      return;
+    }
 
     setLoading(true);
+
     try {
-      const res = await fetch(`${API}/api/users/signup`, {
+      const res = await fetch(`${API}/api/users/register`, { // <-- fixed to /register
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+
+      const contentType = res.headers.get('content-type');
+      let data;
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error('Unexpected response:', text);
+        throw new Error('Unexpected server response');
+      }
+
       if (res.ok) {
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
         navigate('/');
       } else {
-        alert(data.error || 'Signup failed');
+        setError(data.message || 'Signup failed');
       }
     } catch (err) {
       console.error(err);
-      alert('Error signing up');
+      setError('Network error or backend unreachable');
     } finally {
       setLoading(false);
     }
@@ -41,6 +63,7 @@ export default function Signup({ setUser }) {
   return (
     <div className="max-w-md mx-auto mt-16 p-6 border rounded shadow-md">
       <h2 className="text-xl font-bold mb-4">Sign Up</h2>
+      {error && <p className="text-red-600 mb-2">{error}</p>}
       <form onSubmit={handleSignup} className="flex flex-col gap-3">
         <input
           type="email"
@@ -75,7 +98,10 @@ export default function Signup({ setUser }) {
         </button>
       </form>
       <p className="mt-3 text-sm text-gray-600">
-        Already have an account? <Link to="/login" className="text-emerald-600 hover:underline">Login</Link>
+        Already have an account?{' '}
+        <Link to="/login" className="text-emerald-600 hover:underline">
+          Login
+        </Link>
       </p>
     </div>
   );

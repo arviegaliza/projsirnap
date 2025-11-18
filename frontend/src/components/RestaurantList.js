@@ -6,16 +6,14 @@ import 'leaflet/dist/leaflet.css';
 import { io } from 'socket.io-client';
 
 const API = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
-const socket = io(API);
 
-// Fallback mock data
+// Mock fallback data
 const mockRestaurants = [
   { id: 1, name: 'Cafe Manila', type: 'Café', cuisine: 'Coffee & Pastries', city: 'Manila', address: '123 Rizal St', price_range: '$', rating: 4.2, promo: '10% off', tables_available: 5, lat: 14.5995, lng: 120.9842 },
   { id: 2, name: 'Luzon Grill', type: 'Restaurant', cuisine: 'Filipino', city: 'Quezon City', address: '456 EDSA Ave', price_range: '$$', rating: 4.5, promo: '', tables_available: 3, lat: 14.6760, lng: 121.0437 },
   { id: 3, name: 'Baguio Bakery', type: 'Bakery', cuisine: 'Pastries', city: 'Baguio', address: '789 Session Rd', price_range: '$', rating: 4.0, promo: 'Free drink', tables_available: 8, lat: 16.4023, lng: 120.5960 },
 ];
 
-// Type styles
 const TYPE_STYLES = {
   'café': { color: '#8B5E3C', emoji: '☕' },
   'cafe': { color: '#8B5E3C', emoji: '☕' },
@@ -26,7 +24,7 @@ const TYPE_STYLES = {
   'other': { color: '#2563EB', emoji: '📍' },
 };
 
-// DivIcon maker
+// Map marker helper
 function createDivIcon({ color = '#2563EB', emoji = '📍' }) {
   const html = `
     <div style="
@@ -56,7 +54,6 @@ const REGIONS = {
   mindanao: { north: 9.0, south: 5.0, west: 125.0, east: 127.5 },
 };
 
-// Mock cost structure
 const PAYMENT_OPTIONS = ['GCash', 'PayPal', 'Credit Card'];
 
 export default function RestaurantList() {
@@ -64,13 +61,14 @@ export default function RestaurantList() {
   const [q, setQ] = useState('');
   const mapRef = useRef(null);
 
-  // Fetch restaurants & subscribe to socket
   useEffect(() => {
     let mounted = true;
+
+    // Fetch restaurants
     const fetchRestaurants = async () => {
       try {
         const res = await fetch(`${API}/api/restaurants`);
-        if (!res.ok) throw new Error('API returned non-OK');
+        console.log('API response status:', res.status);
         const data = await res.json();
         if (!mounted) return;
         setRestaurants(Array.isArray(data) && data.length ? data : mockRestaurants);
@@ -79,23 +77,31 @@ export default function RestaurantList() {
         if (mounted) setRestaurants(mockRestaurants);
       }
     };
+
     fetchRestaurants();
 
+    // Socket.IO setup
+    const socket = io(API, { transports: ['websocket', 'polling'] });
+
+    socket.on('connect', () => console.log('Connected Socket.IO:', socket.id));
+
     socket.on('bookingUpdated', updated => {
-      setRestaurants(prev => prev.map(r =>
-        r.id === updated.restaurantId
-          ? { ...r, tables_available: updated.tables_available, promo: updated.promo ?? r.promo }
-          : r
-      ));
+      setRestaurants(prev =>
+        prev.map(r =>
+          r.id === updated.restaurantId
+            ? { ...r, tables_available: updated.tables_available, promo: updated.promo ?? r.promo }
+            : r
+        )
+      );
     });
 
     return () => {
       mounted = false;
-      socket.off('bookingUpdated');
+      socket.disconnect();
     };
   }, []);
 
-  // Filtered list
+  // Filter restaurants by query
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
     return restaurants.filter(r => {
@@ -114,7 +120,7 @@ export default function RestaurantList() {
     });
   }, [q, restaurants]);
 
-  // Map markers
+  // Prepare map markers
   const markers = useMemo(() => {
     return filtered.map(r => {
       const lat = Number(r.lat);
@@ -149,7 +155,7 @@ export default function RestaurantList() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Search */}
+      {/* Search input */}
       <div className="mb-4">
         <input
           value={q}
@@ -188,7 +194,7 @@ export default function RestaurantList() {
         </MapContainer>
       </div>
 
-      {/* Restaurant List */}
+      {/* Restaurant list */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.length ? filtered.map(r => (
           <div key={r.id} className="border rounded p-4 flex flex-col justify-between hover:shadow-md transition">
