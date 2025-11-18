@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
-
+import socket from '../socket'; // import the shared socket
 const API = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
 const socket = io(API);
 
