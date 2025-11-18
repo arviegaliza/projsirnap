@@ -1,0 +1,32 @@
+
+
+/* Tailwind CSS Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Optional custom styles */
+body {
+font-family: 'Inter', sans-serif;
+background-color: #f9fafb;
+}
+
+
+input, select, textarea {
+outline: none;
+transition: all 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+border-color: #10b981;
+box-shadow: 0 0 0 2px rgba(16,185,129,0.2);
+}
+
+
+button {
+cursor: pointer;
+transition: all 0.2s;
+}
+button:hover {
+opacity: 0.9;
+}
