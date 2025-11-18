@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*', // e.g., 'https://coffeenivincent.onrender.com'
+  origin: process.env.FRONTEND_URL || '*', // your frontend URL
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
@@ -35,5 +35,34 @@ pool.query('SELECT NOW()', (err, res) => {
 // Root
 app.get('/', (req, res) => res.send('API running'));
 
-// Start server (without Socket.IO if not needed)
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || '*',
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+// Socket.IO events
+io.on('connection', socket => {
+  console.log('Client connected:', socket.id);
+
+  // Example: broadcast updated booking to all clients
+  socket.on('updateBooking', data => {
+    console.log('Booking updated:', data);
+    io.emit('bookingUpdated', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
+// Start server
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
