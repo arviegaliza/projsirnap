@@ -12,12 +12,19 @@ const bookingsRouter = require('./routes/bookings');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Middleware
+// CORS: Allow only your deployed frontend
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'https://projsirnap.vercel.app', // your Vercel frontend
+  'http://localhost:3000' // for local dev
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*', // your frontend URL
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
+
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -26,14 +33,14 @@ app.use('/api/users', usersRouter);
 app.use('/api/restaurants', restaurantsRouter);
 app.use('/api/bookings', bookingsRouter);
 
-// Test DB
+// Root test route
+app.get('/', (req, res) => res.send('API running'));
+
+// Test DB connection
 pool.query('SELECT NOW()', (err, res) => {
   if (err) console.error('DB Connection Error:', err);
   else console.log('Connected to DB at', res.rows[0].now);
 });
-
-// Root
-app.get('/', (req, res) => res.send('API running'));
 
 // Create HTTP server
 const server = http.createServer(app);
@@ -41,17 +48,16 @@ const server = http.createServer(app);
 // Initialize Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || '*',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
-    credentials: true
-  }
+    credentials: true,
+  },
 });
 
 // Socket.IO events
 io.on('connection', socket => {
   console.log('Client connected:', socket.id);
 
-  // Example: broadcast updated booking to all clients
   socket.on('updateBooking', data => {
     console.log('Booking updated:', data);
     io.emit('bookingUpdated', data);
