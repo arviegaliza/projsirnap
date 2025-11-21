@@ -9,6 +9,8 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 import RestaurantList from './components/RestaurantList';
 import RestaurantPage from './components/RestaurantPage';
+
+
 import 'leaflet/dist/leaflet.css';
 
 export default function App() {
@@ -31,7 +33,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/restaurants" element={<RestaurantList />} />
-          <Route path="/restaurant/:id" element={<RestaurantPage />} />
+          {/* Restaurant details page */}
+          <Route path="/restaurant/:id" element={<RestaurantPage user={user} />} />
 
           {/* Login & Signup */}
           <Route
@@ -42,6 +45,9 @@ export default function App() {
             path="/signup"
             element={user ? <Navigate to="/" /> : <Signup setUser={setUser} />}
           />
+
+          {/* Catch-all: redirect unknown routes to home */}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
       <Footer />

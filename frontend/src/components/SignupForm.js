@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const API = process.env.REACT_APP_API_BASE || 'https://coffeenivincent.onrender.com';
 
 export default function SignupForm() {
+  const [name, setName] = useState(''); // added name field
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -16,8 +17,8 @@ export default function SignupForm() {
     e.preventDefault();
     setError('');
 
-    if (!email || !password) {
-      setError('Email and password are required');
+    if (!name || !email || !password) {
+      setError('Name, email, and password are required');
       return;
     }
 
@@ -31,7 +32,7 @@ export default function SignupForm() {
       const res = await fetch(`${API}/api/users/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }), // send name too
       });
 
       const contentType = res.headers.get('content-type');
@@ -65,6 +66,14 @@ export default function SignupForm() {
       <h2 className="text-2xl font-bold mb-4">Sign Up</h2>
       {error && <p className="text-red-600 mb-2">{error}</p>}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <input
+          type="text"
+          placeholder="Full Name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="border px-3 py-2 rounded focus:outline-none focus:border-emerald-500 focus:ring focus:ring-emerald-200"
+          required
+        />
         <input
           type="email"
           placeholder="Email"
